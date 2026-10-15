@@ -1,0 +1,17 @@
+# Build artifacts
+*.deb
+*.dsc
+*.orig.tar.gz
+*.debian.tar.xz
+*.buildinfo
+*.changes
+out/
+
+# Upstream download / unpack
+kitty-*.txz
+bundle/
+kitty-[0-9]*/
+
+# Editors / OS
+.idea/*
+.DS_Store

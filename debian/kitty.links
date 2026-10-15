@@ -1,0 +1,6 @@
+opt/kitty/bin/kitty usr/bin/kitty
+opt/kitty/bin/kitten usr/bin/kitten
+usr/lib/kitty/shell-integration/fish/vendor_completions.d/kitty.fish usr/share/fish/vendor_completions.d/kitty.fish
+usr/lib/kitty/shell-integration/fish/vendor_completions.d/kitten.fish usr/share/fish/vendor_completions.d/kitten.fish
+usr/lib/kitty/shell-integration/fish/vendor_completions.d/clone-in-kitty.fish usr/share/fish/vendor_completions.d/clone-in-kitty.fish
+usr/lib/kitty/shell-integration/zsh/completions/_kitty usr/share/zsh/vendor-completions/_kitty

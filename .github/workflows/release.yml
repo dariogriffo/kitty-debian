@@ -1,0 +1,144 @@
+name: Build kitty for Debian and Ubuntu
+
+on:
+  workflow_dispatch:
+    inputs:
+      kitty_version:
+        description: The version of kitty to build (e.g. 0.49.2).
+        type: string
+        required: true
+      build_version:
+        description: The build (packaging) version.
+        type: string
+        required: true
+      architecture:
+        description: Architecture to build (amd64, arm64, or 'all' for both)
+        type: choice
+        default: 'all'
+        options:
+          - 'all'
+          - 'amd64'
+          - 'arm64'
+
+permissions:
+  contents: write
+
+jobs:
+  build-debian:
+    name: Build Debian (${{ matrix.arch }})
+    # Both architectures run on amd64: the prebuilt bundle is only unpacked and
+    # copied, never executed, so no emulation or native arm64 runner is needed.
+    strategy:
+      matrix:
+        arch: [amd64, arm64]
+    if: inputs.architecture == 'all' || inputs.architecture == matrix.arch
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout kitty-debian
+        uses: actions/checkout@v4
+
+      - name: Validate upstream license permits paid distribution
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: ./validate_license.sh ${{ inputs.kitty_version }}
+
+      - name: Build .deb packages
+        env:
+          # The amd64 job builds the arch:all packages; when both run, the
+          # arm64 job skips them so the release has one copy of each.
+          SKIP_ARCH_ALL: ${{ (inputs.architecture == 'all' && matrix.arch == 'arm64') && '1' || '' }}
+        run: ./build_debian.sh ${{ inputs.kitty_version }} ${{ inputs.build_version }} ${{ matrix.arch }}
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: artifact-${{ matrix.arch }}
+          path: out/kitty*.deb
+
+  build-ubuntu:
+    name: Build Ubuntu (${{ matrix.arch }})
+    strategy:
+      matrix:
+        arch: [amd64, arm64]
+    if: inputs.architecture == 'all' || inputs.architecture == matrix.arch
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout kitty-debian
+        uses: actions/checkout@v4
+
+      - name: Validate upstream license permits paid distribution
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: ./validate_license.sh ${{ inputs.kitty_version }}
+
+      - name: Build .deb packages
+        env:
+          SKIP_ARCH_ALL: ${{ (inputs.architecture == 'all' && matrix.arch == 'arm64') && '1' || '' }}
+        run: ./build_ubuntu.sh ${{ inputs.kitty_version }} ${{ inputs.build_version }} ${{ matrix.arch }}
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ubuntu-artifact-${{ matrix.arch }}
+          path: out/kitty*_ubu.deb
+
+  build-src:
+    name: Build Source Packages
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout kitty-debian
+        uses: actions/checkout@v4
+
+      - name: Install packaging tools
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends dpkg-dev devscripts wget ca-certificates
+
+      - name: Build source packages
+        run: ./build_src.sh ${{ inputs.kitty_version }} ${{ inputs.build_version }}
+
+      - name: Upload Source Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: source-artifact
+          path: |
+            kitty_*.dsc
+            kitty_*.orig.tar.gz
+            kitty_*.debian.tar.xz
+
+  release-kitty:
+    name: Release kitty for Debian and Ubuntu
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    needs: [build-debian, build-ubuntu, build-src]
+    steps:
+      - name: Download Debian binary artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: artifact-*
+          merge-multiple: true
+
+      - name: Download Ubuntu binary artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: ubuntu-artifact-*
+          merge-multiple: true
+
+      - name: Download source artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: source-artifact
+
+      - name: Publish Release
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: false
+          files: |
+            kitty_*.deb
+            kitty-terminfo_*.deb
+            kitty-shell-integration_*.deb
+            kitty-doc_*.deb
+            kitty_*.dsc
+            kitty_*.orig.tar.gz
+            kitty_*.debian.tar.xz
+          name: ${{ inputs.kitty_version }}+${{ inputs.build_version }}
+          tag_name: ${{ inputs.kitty_version }}+${{ inputs.build_version }}
+          fail_on_unmatched_files: true

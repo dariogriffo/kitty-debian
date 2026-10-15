@@ -1,0 +1,40 @@
+kitty for Debian/Ubuntu (deb.griffo.io)
+=======================================
+
+This package ships the official upstream prebuilt bundle, unmodified, under
+/opt/kitty: its own Python runtime, its own copies of harfbuzz, freetype,
+cairo, OpenSSL and friends. /usr/bin/kitty and /usr/bin/kitten are symlinks
+into it. The desktop entry, icons, man pages, terminfo and shell integration
+files live at the same paths Debian's own packages use.
+
+Shell completions
+-----------------
+fish and zsh completions for kitty, kitten and clone-in-kitty are installed
+system-wide (they call `kitten __complete__` at completion time). bash has
+no static completion file: kitty's shell integration enables it, or run
+    source <(kitten __complete__ setup bash)
+
+Remote machines
+---------------
+Install only kitty-terminfo on hosts you ssh into so TERM=xterm-kitty is
+known there, or let the ssh kitten copy it for you.
+
+kitten update-self
+------------------
+`kitten update-self` downloads a new kitten binary over the one it is run
+from, which is the packaged /opt/kitty/bin/kitten. Do not use it; upgrade
+with apt instead. If you did run it, `apt reinstall kitty` restores the
+packaged binary.
+
+Opening files and URLs with kitty
+---------------------------------
+Like Debian, kitty-open.desktop is not installed live because it registers
+kitty as a handler for text/*, image/*, directories and ssh URLs, which can
+make it the default opener where none is set. To opt in:
+    cp /usr/share/doc/kitty/examples/kitty-open.desktop ~/.local/share/applications/
+
+Input method support
+--------------------
+To type non-Latin characters through ibus or fcitx5, start kitty with
+    GLFW_IM_MODULE=ibus kitty
+(fcitx5 speaks the ibus protocol, so "ibus" is correct for it too).

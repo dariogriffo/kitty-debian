@@ -1,0 +1,108 @@
+#!/usr/bin/make -f
+# Repackage the official upstream kitty prebuilt bundle
+# (kitty-<ver>-{x86_64,arm64}.txz) into Debian packages, the same four-way
+# split Debian uses (kitty, kitty-terminfo, kitty-shell-integration,
+# kitty-doc). Nothing is built from source: the bundle is relocatable
+# ($ORIGIN rpaths, bundled Python and libraries) and lands untouched in
+# /opt/kitty, upstream's documented system-wide location. Only the files that
+# have a standard home (desktop entry, icons, man pages, terminfo, shell
+# integration, docs) are copied out of it.
+
+include /usr/share/dpkg/architecture.mk
+
+# Upstream version, taken from the changelog with the Debian revision/suffix
+# stripped (e.g. 0.49.2-1~bookworm -> 0.49.2).
+KITTY_VERSION := $(shell dpkg-parsechangelog -S Version | sed 's/[-~].*//')
+
+# Upstream only publishes bundles for these two; note the mixed spelling.
+BUNDLE_ARCH_amd64 := x86_64
+BUNDLE_ARCH_arm64 := arm64
+BUNDLE_ARCH := $(BUNDLE_ARCH_$(DEB_HOST_ARCH))
+
+TARBALL := kitty-$(KITTY_VERSION)-$(BUNDLE_ARCH).txz
+URL     := https://github.com/kovidgoyal/kitty/releases/download/v$(KITTY_VERSION)/$(TARBALL)
+BUNDLE  := bundle
+
+KITTY    := debian/kitty
+OPT      := $(KITTY)/opt/kitty
+TERMINFO := debian/kitty-terminfo
+SHELLINT := debian/kitty-shell-integration
+DOC      := debian/kitty-doc
+
+%:
+	dh $@
+
+override_dh_auto_configure:
+
+override_dh_auto_build:
+	@if [ -z "$(BUNDLE_ARCH)" ]; then \
+		echo "Unsupported architecture $(DEB_HOST_ARCH): upstream publishes bundles for amd64 and arm64 only" >&2; \
+		exit 1; \
+	fi
+	# A tarball already next to debian/ (the Docker build puts it there) is
+	# used as-is; the source-package build downloads it.
+	[ -f "$(TARBALL)" ] || wget -q "$(URL)" -O "$(TARBALL)"
+	rm -rf $(BUNDLE)
+	mkdir $(BUNDLE)
+	tar -xJf "$(TARBALL)" -C $(BUNDLE)
+	# Layout guard: fail loudly if upstream ever changes the bundle shape
+	test -x $(BUNDLE)/bin/kitty
+	test -x $(BUNDLE)/bin/kitten
+	test -f $(BUNDLE)/share/terminfo/x/xterm-kitty
+	test -d $(BUNDLE)/lib/kitty/shell-integration
+	test -f $(BUNDLE)/share/doc/kitty/html/index.html
+
+override_dh_auto_test:
+
+override_dh_auto_install:
+	# --- kitty (amd64/arm64): the whole bundle, untouched, in /opt/kitty ----
+	install -d $(OPT)
+	cp -a $(BUNDLE)/bin $(BUNDLE)/lib $(OPT)/
+	# /usr/bin/kitty and /usr/bin/kitten symlinks come from debian/kitty.links
+	# Desktop entry, icons and man pages go where the desktop and man look
+	install -D -m 0644 $(BUNDLE)/share/applications/kitty.desktop \
+		$(KITTY)/usr/share/applications/kitty.desktop
+	install -d $(KITTY)/usr/share
+	cp -a $(BUNDLE)/share/icons $(BUNDLE)/share/man $(KITTY)/usr/share/
+	# Like Debian: the sample kitty.conf and the opt-in kitty-open.desktop
+	# (which registers kitty as a handler for text/*, image/*, directories and
+	# ssh URLs, so it is not installed live) ship as examples
+	install -d $(KITTY)/usr/share/doc/kitty/examples
+	cp $$(find $(BUNDLE)/share/doc/kitty/html/_downloads -name kitty.conf | head -n1) \
+		$(KITTY)/usr/share/doc/kitty/examples/kitty.conf
+	cp $(BUNDLE)/share/applications/kitty-open.desktop \
+		$(KITTY)/usr/share/doc/kitty/examples/kitty-open.desktop
+	# Debian's shebang fix for the ssh kitten bootstrap: python -> python3
+	sed -i 's|^#!/usr/bin/env python$$|#!/usr/bin/env python3|' \
+		$(OPT)/lib/kitty/shell-integration/ssh/bootstrap.py
+	# --- kitty-terminfo (all) ------------------------------------------------
+	install -D -m 0644 $(BUNDLE)/share/terminfo/x/xterm-kitty \
+		$(TERMINFO)/usr/share/terminfo/x/xterm-kitty
+	# --- kitty-shell-integration (all): Debian's path, same files -----------
+	install -d $(SHELLINT)/usr/lib/kitty
+	cp -a $(OPT)/lib/kitty/shell-integration $(SHELLINT)/usr/lib/kitty/
+	# fish/zsh vendor completion links come from debian/kitty.links
+	# --- kitty-doc (all) -----------------------------------------------------
+	install -d $(DOC)/usr/share/doc/kitty
+	cp -a $(BUNDLE)/share/doc/kitty/html $(DOC)/usr/share/doc/kitty/html
+	# Like Debian: drop the PayPal tracking pixel from the support page
+	sed -i '/pixel\.gif/d' $(DOC)/usr/share/doc/kitty/html/support.html
+
+# Leave the HTML docs and the sample config readable in place
+override_dh_compress:
+	dh_compress -X/html -X/examples
+
+# Prebuilt and already stripped; also lets the arm64 package be assembled on
+# an amd64 builder without cross binutils
+override_dh_strip:
+
+override_dh_dwz:
+
+# The bundled libraries live in /opt and are private to kitty: no shlibs
+# file, and system dependencies are declared by hand in debian/control
+override_dh_makeshlibs:
+
+override_dh_shlibdeps:
+
+override_dh_auto_clean:
+	rm -rf $(BUNDLE)

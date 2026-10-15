@@ -1,0 +1,65 @@
+Source: kitty
+Section: x11
+Priority: optional
+Maintainer: Dario Griffo <dariogriffo@gmail.com>
+Build-Depends: debhelper-compat (= 13), wget, ca-certificates, xz-utils
+Standards-Version: 4.6.2
+Homepage: https://sw.kovidgoyal.net/kitty/
+Rules-Requires-Root: no
+
+Package: kitty
+Architecture: amd64 arm64
+Depends: kitty-terminfo (>= ${source:Upstream-Version}),
+         kitty-shell-integration (>= ${source:Upstream-Version}),
+         libc6 (>= 2.35),
+         libx11-6,
+         libx11-xcb1,
+         libxcursor1,
+         libxcb1,
+         libxcb-xkb1,
+         libdbus-1-3,
+         libfontconfig1,
+         libgl1,
+         libegl1,
+         ${misc:Depends}
+Recommends: kitty-doc, libcanberra0, libstartup-notification0
+Suggests: imagemagick, fonts-noto-color-emoji
+Provides: x-terminal-emulator
+Description: fast, feature-rich, GPU based terminal emulator
+ kitty supports modern terminal features like: graphics, unicode,
+ true-color, OpenType ligatures, mouse protocol, focus tracking, and
+ bracketed paste. It ships "kittens", small terminal programs (icat, ssh,
+ diff, clipboard, themes, remote control, ...) run through the kitten
+ command.
+ .
+ This package ships the official upstream prebuilt bundle, unmodified, under
+ /opt/kitty with its own Python runtime and libraries, and links kitty and
+ kitten into /usr/bin. Nothing is rebuilt from source. This is an unofficial
+ package.
+
+Package: kitty-terminfo
+Architecture: all
+Multi-Arch: foreign
+Depends: ${misc:Depends}
+Description: fast, feature-rich, GPU based terminal emulator (terminfo file)
+ This package provides the xterm-kitty terminfo definition for the kitty
+ terminal emulator so that it can easily be installed on remote systems.
+ This is an unofficial package.
+
+Package: kitty-shell-integration
+Architecture: all
+Multi-Arch: foreign
+Depends: ${misc:Depends}
+Description: fast, feature-rich, GPU based terminal emulator (shell integration files)
+ This package provides kitty's shell integration files (bash, fish, zsh and
+ the ssh kitten bootstrap) so that they can easily be installed on remote
+ systems. This is an unofficial package.
+
+Package: kitty-doc
+Architecture: all
+Multi-Arch: foreign
+Section: doc
+Depends: ${misc:Depends}
+Description: fast, feature-rich, GPU based terminal emulator (documentation)
+ This package contains the HTML documentation for the kitty terminal
+ emulator. This is an unofficial package.

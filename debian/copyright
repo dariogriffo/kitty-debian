@@ -1,0 +1,39 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: kitty
+Upstream-Contact: Kovid Goyal <kovid@kovidgoyal.net>
+Source: https://github.com/kovidgoyal/kitty
+Comment:
+ The binary packages repackage upstream's prebuilt Linux bundle, which
+ contains kitty itself and statically bundled copies of its runtime: CPython
+ (PSF-2.0), OpenSSL (Apache-2.0), HarfBuzz (MIT), FreeType (FTL or GPL-2),
+ cairo (LGPL-2.1 or MPL-1.1), pixman (MIT), libpng (libpng-2.0), zlib (Zlib),
+ brotli (MIT), lcms2 (MIT), xxHash (BSD-2-Clause), GLib (LGPL-2.1), graphite2
+ (LGPL-2.1), libffi (MIT), expat (MIT), ncurses (MIT), readline (GPL-3),
+ SQLite (public domain), wayland (MIT), libxkbcommon (MIT), xz (0BSD), bzip2
+ (bzip2-1.0.6), libiconv (LGPL-2.1), the slang shader compiler (Apache-2.0
+ with LLVM exception) and the Symbols Nerd Font Mono (MIT). Upstream publishes
+ a full SPDX SBOM next to every release (kitty-<version>.tar.xz.spdx.json).
+
+Files: *
+Copyright: 2017-2026 Kovid Goyal <kovid@kovidgoyal.net>
+License: GPL-3.0
+
+Files: debian/*
+Copyright: 2026 Dario Griffo <dariogriffo@gmail.com>
+License: GPL-3.0
+
+License: GPL-3.0
+ This program is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, version 3 of the License.
+ .
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+ .
+ You should have received a copy of the GNU General Public License
+ along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ .
+ On Debian systems, the complete text of the GNU General Public License
+ version 3 can be found in "/usr/share/common-licenses/GPL-3".

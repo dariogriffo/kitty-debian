@@ -1,0 +1,12 @@
+.git
+.github
+.idea
+out
+bundle
+*.deb
+*.dsc
+*.orig.tar.gz
+*.debian.tar.xz
+*.buildinfo
+*.changes
+kitty-[0-9]*/
