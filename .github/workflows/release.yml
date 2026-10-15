@@ -30,8 +30,7 @@ jobs:
     # copied, never executed, so no emulation or native arm64 runner is needed.
     strategy:
       matrix:
-        arch: [amd64, arm64]
-    if: inputs.architecture == 'all' || inputs.architecture == matrix.arch
+        arch: ${{ fromJSON(inputs.architecture == 'all' && '["amd64","arm64"]' || format('["{0}"]', inputs.architecture)) }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout kitty-debian
@@ -59,8 +58,7 @@ jobs:
     name: Build Ubuntu (${{ matrix.arch }})
     strategy:
       matrix:
-        arch: [amd64, arm64]
-    if: inputs.architecture == 'all' || inputs.architecture == matrix.arch
+        arch: ${{ fromJSON(inputs.architecture == 'all' && '["amd64","arm64"]' || format('["{0}"]', inputs.architecture)) }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout kitty-debian
