@@ -103,8 +103,7 @@ restores it.
 Requires Docker (binary packages) and `dpkg-dev`/`devscripts` (source packages):
 
 ```sh
-./build_debian.sh 0.49.2 1 all   # -> ./out/*.deb        (Debian suites)
-./build_ubuntu.sh 0.49.2 1 all   # -> ./out/*_ubu.deb    (Ubuntu suites)
+./build_debian.sh 0.49.2 1 all   # -> ./out/*.deb        (every suite)
 ./build_src.sh    0.49.2 1       # -> *.dsc / *.orig.tar.gz / *.debian.tar.xz
 ```
 

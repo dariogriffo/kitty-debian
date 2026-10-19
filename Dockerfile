@@ -1,9 +1,8 @@
-ARG DIST=bookworm
-FROM debian:${DIST}
+FROM debian:bookworm
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Packaging environment for the target suite. Nothing is compiled: debian/rules
+# Packaging environment, shared by every suite. Nothing is compiled: debian/rules
 # unpacks upstream's prebuilt bundle and dpkg-buildpackage assembles the debs.
 RUN apt-get update && apt-get install -y --no-install-recommends \
         build-essential \
@@ -28,6 +27,6 @@ WORKDIR /build
 # otherwise debian/rules fetches it.
 COPY . /build/
 
-RUN chmod +x debian/rules && dpkg-buildpackage ${BUILD_TYPE} -us -uc -d --host-arch ${ARCH}
+RUN chmod +x debian/rules && dpkg-buildpackage ${BUILD_TYPE} -us -uc -d -Zxz --host-arch ${ARCH}
 
 RUN mkdir -p /out && cp ../kitty*.deb /out/

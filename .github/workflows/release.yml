@@ -25,7 +25,7 @@ permissions:
 
 jobs:
   build-debian:
-    name: Build Debian (${{ matrix.arch }})
+    name: Build (${{ matrix.arch }})
     # Both architectures run on amd64: the prebuilt bundle is only unpacked and
     # copied, never executed, so no emulation or native arm64 runner is needed.
     strategy:
@@ -54,32 +54,6 @@ jobs:
           name: artifact-${{ matrix.arch }}
           path: out/kitty*.deb
 
-  build-ubuntu:
-    name: Build Ubuntu (${{ matrix.arch }})
-    strategy:
-      matrix:
-        arch: ${{ fromJSON(inputs.architecture == 'all' && '["amd64","arm64"]' || format('["{0}"]', inputs.architecture)) }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout kitty-debian
-        uses: actions/checkout@v4
-
-      - name: Validate upstream license permits paid distribution
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: ./validate_license.sh ${{ inputs.kitty_version }}
-
-      - name: Build .deb packages
-        env:
-          SKIP_ARCH_ALL: ${{ (inputs.architecture == 'all' && matrix.arch == 'arm64') && '1' || '' }}
-        run: ./build_ubuntu.sh ${{ inputs.kitty_version }} ${{ inputs.build_version }} ${{ matrix.arch }}
-
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ubuntu-artifact-${{ matrix.arch }}
-          path: out/kitty*_ubu.deb
-
   build-src:
     name: Build Source Packages
     runs-on: ubuntu-latest
@@ -106,18 +80,12 @@ jobs:
     name: Release kitty for Debian and Ubuntu
     if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    needs: [build-debian, build-ubuntu, build-src]
+    needs: [build-debian, build-src]
     steps:
-      - name: Download Debian binary artifacts
+      - name: Download binary artifacts
         uses: actions/download-artifact@v4
         with:
           pattern: artifact-*
-          merge-multiple: true
-
-      - name: Download Ubuntu binary artifacts
-        uses: actions/download-artifact@v4
-        with:
-          pattern: ubuntu-artifact-*
           merge-multiple: true
 
       - name: Download source artifacts

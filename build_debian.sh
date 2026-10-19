@@ -1,13 +1,14 @@
 #!/bin/bash
-# Build the kitty binary packages (.deb) for each Debian suite, using a
-# per-suite Docker image so the packages are assembled with that suite's
-# dpkg/debhelper.
+# Build the kitty binary packages (.deb), one set for every suite. Nothing is
+# compiled (upstream's bundle is repackaged), so the per-suite builds differed
+# only in their ~<suite> version suffix. The fixed ~griffo keeps it below the
+# distro's own build of the same version.
 #
-# Produces, per suite, in ./out :
-#   kitty_<ver>-<build>~<dist>_<arch>.deb            (amd64, arm64)
-#   kitty-terminfo_<ver>-<build>~<dist>_all.deb
-#   kitty-shell-integration_<ver>-<build>~<dist>_all.deb
-#   kitty-doc_<ver>-<build>~<dist>_all.deb
+# Produces, in ./out :
+#   kitty_<ver>-<build>~griffo_<arch>.deb            (amd64, arm64)
+#   kitty-terminfo_<ver>-<build>~griffo_all.deb
+#   kitty-shell-integration_<ver>-<build>~griffo_all.deb
+#   kitty-doc_<ver>-<build>~griffo_all.deb
 #
 # The arch:all packages are built once, by the first architecture of the run.
 # Set SKIP_ARCH_ALL=1 to never build them (CI does this for the arm64 job,
@@ -25,7 +26,7 @@ if [ -z "$VERSION" ] || [ -z "$BUILD" ]; then
     exit 1
 fi
 
-DISTS=("bookworm" "trixie" "forky" "sid")
+FULL_VERSION="${VERSION}-${BUILD}~griffo"
 
 case "$ARCH" in
     all)   ARCHES=("amd64" "arm64") ;;
@@ -48,36 +49,32 @@ BUILD_TYPE="-b"
 
 for arch in "${ARCHES[@]}"; do
     TARBALL="kitty-${VERSION}-$(bundle_arch "$arch").txz"
-    # Download once per architecture; the Dockerfile COPYs it into every
-    # suite's build so debian/rules does not fetch it 4 times.
+    # Download on the host; the Dockerfile COPYs it into the build so
+    # debian/rules does not fetch it again.
     if [ ! -f "$TARBALL" ]; then
         echo "==> Downloading $TARBALL"
         wget -q "https://github.com/kovidgoyal/kitty/releases/download/v${VERSION}/${TARBALL}"
     fi
 
-    for dist in "${DISTS[@]}"; do
-        FULL_VERSION="${VERSION}-${BUILD}~${dist}"
-        echo "==> Building kitty ${FULL_VERSION} (${dist}, ${arch}, dpkg-buildpackage ${BUILD_TYPE})"
+    echo "==> Building kitty ${FULL_VERSION} (${arch}, dpkg-buildpackage ${BUILD_TYPE})"
 
-        # Generate the distribution-specific changelog (overwrites the placeholder).
-        cat > debian/changelog << EOC
-kitty (${FULL_VERSION}) ${dist}; urgency=medium
+    # Generate the changelog (overwrites the placeholder).
+    cat > debian/changelog << EOC
+kitty (${FULL_VERSION}) stable; urgency=medium
 
   * New upstream release ${VERSION}.
 
  -- Dario Griffo <dariogriffo@gmail.com>  $(date -R)
 EOC
 
-        docker build -t "kitty-${dist}-${arch}" \
-            --build-arg "DIST=${dist}" \
-            --build-arg "ARCH=${arch}" \
-            --build-arg "BUILD_TYPE=${BUILD_TYPE}" \
-            -f Dockerfile .
+    docker build -t "kitty-${arch}" \
+        --build-arg "ARCH=${arch}" \
+        --build-arg "BUILD_TYPE=${BUILD_TYPE}" \
+        -f Dockerfile .
 
-        cid="$(docker create "kitty-${dist}-${arch}")"
-        docker cp "${cid}:/out/." ./out/
-        docker rm "${cid}" > /dev/null
-    done
+    cid="$(docker create "kitty-${arch}")"
+    docker cp "${cid}:/out/." ./out/
+    docker rm "${cid}" > /dev/null
 
     # Later architectures in this run only need the arch-dependent package
     BUILD_TYPE="-B"
