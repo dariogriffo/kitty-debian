@@ -17,7 +17,7 @@ own Python runtime and libraries, but managed by apt and updated the day a
 release ships upstream.
 
 Supported suites: Debian **bookworm, trixie, forky, sid** and Ubuntu **jammy,
-noble, questing, resolute**. Architectures: **amd64 and arm64**, the two
+noble, questing, resolute, stonking**. Architectures: **amd64 and arm64**, the two
 upstream publishes bundles for (there is no i386, armhf or riscv64 build).
 
 ## Packages
